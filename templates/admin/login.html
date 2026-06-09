@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Login — Charmly</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+
+    <div class="admin-login">
+        <div class="login-card">
+            <p style="font-size:2.5rem; margin-bottom:0.5rem">🔑</p>
+            <h2>Charmly Admin</h2>
+            <p>Enter your password to manage your shop</p>
+
+            {% if error %}
+            <div style="background:#FFE4EF; color:var(--pink-dark);
+        padding:0.75rem 1rem; border-radius:12px;
+        font-size:0.85rem; margin-bottom:1rem;">
+                {{ error }}
+            </div>
+            {% endif %}
+
+            <form method="POST">
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" name="password" placeholder="Enter admin password" autofocus />
+                </div>
+                <button type="submit" class="btn-full">Login →</button>
+            </form>
+
+            <p style="font-size:0.75rem; color:var(--mid);
+        text-align:center; margin-top:1.25rem">
+                This page is only for you — the shop owner 🩷
+            </p>
+        </div>
+    </div>
+
+</body>
+
+</html>

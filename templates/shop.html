@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Shop — Charmly</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <div class="nav-logo">✦ Charmly</div>
+        <ul class="nav-links">
+            <li><a href="/">Home</a></li>
+            <li><a href="/shop">Shop</a></li>
+            <li><a href="/#about">About</a></li>
+            <li><a href="/#contact">Contact</a></li>
+        </ul>
+        <a href="/cart" class="nav-cart">🛒 Cart <span class="cart-count">0</span></a>
+        <button class="hamburger" id="hamburger">☰</button>
+    </nav>
+
+    <div class="mobile-menu" id="mobileMenu">
+        <a href="/">Home</a>
+        <a href="/shop">Shop</a>
+        <a href="/#about">About</a>
+        <a href="/cart">Cart</a>
+    </div>
+
+    <!-- SHOP HEADER -->
+    <section class="shop-header">
+        <p class="section-label">Handmade with love</p>
+        <h1>The Collection</h1>
+        <p class="shop-subtext">Every piece is made by hand, just for you 🌸</p>
+    </section>
+
+    <!-- FILTERS -->
+    <div class="shop-filters">
+        <a href="/shop" class="filter-tab {% if not category %}active{% endif %}">All</a>
+
+        {% for cat in categories %}
+        <a href="/shop?category={{ cat.id }}" class="filter-tab {% if category == cat.id %}active{% endif %}">
+            {{ cat.emoji }} {{ cat.name }}
+        </a>
+        {% endfor %}
+
+        <a href="/shop?filter=new" class="filter-tab {% if request.args.get('filter') == 'new' %}active{% endif %}">
+            ✨ New
+        </a>
+        <a href="/shop?filter=bestseller"
+            class="filter-tab {% if request.args.get('filter') == 'bestseller' %}active{% endif %}">
+            ⭐ Bestsellers
+        </a>
+    </div>
+
+    <!-- SUBCATEGORIES — shows when a category is selected -->
+    {% if category %}
+    {% for cat in categories %}
+    {% if cat.id == category and cat.subcategories %}
+    <div class="shop-filters" style="background: var(--soft); border-top: none;">
+        <a href="/shop?category={{ cat.id }}" class="filter-tab sub {% if not subcategory %}active{% endif %}">
+            All {{ cat.name }}
+        </a>
+        {% for sub in cat.subcategories %}
+        <a href="/shop?category={{ cat.id }}&subcategory={{ sub.id }}"
+            class="filter-tab sub {% if subcategory == sub.id %}active{% endif %}">
+            {{ sub.emoji }} {{ sub.name }}
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endfor %}
+    {% endif %}
+
+    <!-- PRODUCTS -->
+    <section class="shop-products">
+        {% if products %}
+        <div class="products-grid">
+            {% for product in products %}
+            <div class="product-card {% if product.out_of_stock %}out-of-stock{% endif %}">
+                <a href="/product/{{ product.id }}" class="product-img-link">
+                    <div class="product-img" style="background: {{ product.bg_color }};">
+                        {% if product.image %}
+                        <img src="{{ product.image }}" alt="{{ product.name }}" />
+                        {% else %}
+                        <span class="emoji-placeholder">{{ product.emoji }}</span>
+                        {% endif %}
+                        {% if product.out_of_stock %}
+                        <div class="oos-overlay">
+                            <span class="oos-badge">Out of Stock</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </a>
+
+                <div class="product-info">
+                    <div class="product-rating">★★★★★ ({{ product.reviews }})</div>
+                    <h3 class="product-name">{{ product.name }}</h3>
+                    <p class="product-desc">{{ product.description }}</p>
+                    <div class="product-footer">
+                        <span class="product-price">₹{{ product.price }}</span>
+                        {% if product.out_of_stock %}
+                        <button class="add-btn" disabled style="opacity:0.4; cursor:not-allowed;">✕</button>
+                        {% else %}
+                        <button class="add-btn"
+                            onclick="addToCart('{{ product.id }}', '{{ product.name }}', {{ product.price }}, '{{ product.emoji }}', '{{ product.image or '' }}')">+</button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <p>😔 No items found in this category yet.</p>
+            <a href="/shop" class="btn-primary">See all items</a>
+        </div>
+        {% endif %}
+    </section>
+
+    <footer id="contact">
+        <div class="footer-brand">
+            <p class="footer-logo">✦ Charmly</p>
+            <p class="footer-desc">Handmade items, created with love. Because every bag deserves a little charm.</p>
+        </div>
+        <div class="footer-links">
+            <h4>Shop</h4>
+            <a href="/shop">All items</a>
+            <a href="/shop?filter=new">New arrivals</a>
+            <a href="/shop?filter=bestseller">Bestsellers</a>
+        </div>
+        <div class="footer-links">
+            <h4>Info</h4>
+            <a href="/#about">About Charmly</a>
+            <a href="#">Shipping info</a>
+        </div>
+        <div class="footer-links">
+            <h4>Connect</h4>
+            <a href="#">Instagram</a>
+        </div>
+        <div class="footer-bottom">
+            <p>© 2026 Charmly — A tiny handmade shop by Aahla 🩷</p>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+
+</html>

@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Checkout — Charmly</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <div class="nav-logo">✦ Charmly</div>
+        <ul class="nav-links">
+            <li><a href="/">Home</a></li>
+            <li><a href="/shop">Shop</a></li>
+            <li><a href="/#about">About</a></li>
+            <li><a href="/#contact">Contact</a></li>
+        </ul>
+        <a href="/cart" class="nav-cart">🛒 Cart <span class="cart-count">0</span></a>
+        <button class="hamburger" id="hamburger">☰</button>
+    </nav>
+
+    <div class="mobile-menu" id="mobileMenu">
+        <a href="/">Home</a>
+        <a href="/shop">Shop</a>
+        <a href="/#about">About</a>
+        <a href="/cart">Cart</a>
+    </div>
+
+    <div class="checkout-page">
+        <h1>Checkout 💳</h1>
+
+        <!-- ADDRESS FORM -->
+        <div class="checkout-form">
+            <h3>📦 Delivery Address</h3>
+
+            <div class="form-group">
+                <label>Full Name</label>
+                <input type="text" id="fullName" placeholder="Your full name" />
+            </div>
+
+            <div class="form-group">
+                <label>Phone Number</label>
+                <input type="tel" id="phone" placeholder="10 digit mobile number" maxlength="10" />
+            </div>
+
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="email" placeholder="your@email.com" />
+            </div>
+
+            <div class="form-group">
+                <label>Pincode</label>
+                <input type="text" id="pincode" placeholder="6 digit pincode" maxlength="6"
+                    oninput="fetchAddress(this.value)" />
+                <p id="pincodeMsg" style="font-size:0.75rem; color:var(--pink); margin-top:4px"></p>
+            </div>
+
+            <div class="form-group">
+                <label>City</label>
+                <input type="text" id="city" placeholder="City" />
+            </div>
+
+            <div class="form-group">
+                <label>State</label>
+                <input type="text" id="state" placeholder="State" />
+            </div>
+
+            <div class="form-group">
+                <label>Full Address</label>
+                <textarea id="address" placeholder="House no, Street, Area"></textarea>
+            </div>
+        </div>
+
+        <!-- ORDER SUMMARY -->
+        <div class="checkout-summary">
+            <h3>🛒 Order Summary</h3>
+            <div id="summaryItems" style="margin: 1rem 0;"></div>
+            <div style="border-top: 1px solid #F0EBF8; padding-top: 1rem; margin-top: 1rem;">
+                <div class="cart-total">
+                    <span>Subtotal</span>
+                    <span id="summarySubtotal">₹0</span>
+                </div>
+                <div class="cart-total" style="font-size:0.85rem; color:var(--mid); font-weight:400;">
+                    <span>Shipping</span>
+                    <span id="shippingCost">Calculating...</span>
+                </div>
+                <div class="cart-total" style="margin-top:0.75rem; font-size:1.1rem;">
+                    <span>Total</span>
+                    <span id="summaryTotal" style="color:var(--pink)">₹0</span>
+                </div>
+            </div>
+
+            <button class="btn-full" style="margin-top:1.5rem" onclick="showQRCode(event)">
+                Proceed to Payment →
+            </button>
+
+            <!-- UPI PAYMENT SECTION (Hidden by default) -->
+            <div id="upiSection" style="display:none; margin-top:1.5rem; text-align:center; padding-top:1.5rem; border-top:1px solid #F0EBF8;">
+                <h4 style="margin-bottom:0.5rem; font-family:'Playfair Display',serif;">Pay with any UPI App</h4>
+                <p style="font-size:0.8rem; color:var(--mid); margin-bottom:1rem">Scan the QR code to pay exact amount securely.</p>
+                
+                <div style="background:white; padding:10px; display:inline-block; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.05); margin-bottom:1rem">
+                    <img id="upiQrCode" src="" alt="UPI QR Code" style="width:180px; height:180px;" />
+                </div>
+                
+                <p style="font-size:0.9rem; font-weight:600; margin-bottom:0.25rem; color:var(--dark);">
+                    UPI ID: <span id="upiIdDisplay" style="font-weight:400">{{ upi_id }}</span>
+                </p>
+                
+                <div style="text-align:left; margin-top:1.5rem">
+                    <label style="font-size:0.85rem; font-weight:600; color:var(--dark);">Enter 12-digit UTR / Reference No.</label>
+                    <input type="text" id="utrNumber" placeholder="e.g. 312345678901" maxlength="15" style="margin-top:0.5rem" />
+                    <p style="font-size:0.75rem; color:var(--mid); margin-top:4px">After paying, find the UTR in your app's transaction history.</p>
+                </div>
+                
+                <button class="btn-full" style="margin-top:1rem; background:#06D6A0; color:white;" onclick="submitOrder()">
+                    Confirm Payment & Place Order
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+        // Load cart into summary
+        function loadSummary() {
+            const cart = JSON.parse(localStorage.getItem('charmly_cart')) || [];
+            if (cart.length === 0) {
+                window.location.href = '/cart';
+                return;
+            }
+
+            let subtotal = 0;
+            const summaryItems = document.getElementById('summaryItems');
+            summaryItems.innerHTML = cart.map(item => {
+                subtotal += item.price * item.qty;
+                return `
+          <div style="display:flex; justify-content:space-between; align-items:center;
+            padding:0.6rem 0; border-bottom:1px solid #F0EBF8; font-size:0.88rem;">
+            <span>${item.emoji} ${item.name} × ${item.qty}</span>
+            <span style="font-weight:600">₹${item.price * item.qty}</span>
+          </div>
+        `;
+            }).join('');
+
+            // Shipping: ₹70 flat, free above ₹599
+            const shipping = subtotal >= 599 ? 0 : 70;
+            const total = subtotal + shipping;
+
+            document.getElementById('summarySubtotal').textContent = '₹' + subtotal;
+            document.getElementById('shippingCost').textContent = shipping === 0
+                ? '₹0 — FREE! 🎉'
+                : '₹70';
+            document.getElementById('summaryTotal').textContent = '₹' + total;
+
+            // Store for payment
+            window.shippingCost = shipping;
+            window.orderSubtotal = subtotal;
+            window.orderTotal = total;
+        }
+
+        // Auto-fill city and state from pincode
+        async function fetchAddress(pincode) {
+            if (pincode.length !== 6) return;
+            const msg = document.getElementById('pincodeMsg');
+            msg.textContent = 'Looking up pincode...';
+            try {
+                const res = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
+                const data = await res.json();
+                if (data[0].Status === 'Success') {
+                    const info = data[0].PostOffice[0];
+                    document.getElementById('city').value = info.District;
+                    document.getElementById('state').value = info.State;
+                    msg.textContent = '✓ Found: ' + info.Name;
+                    msg.style.color = '#06D6A0';
+                } else {
+                    msg.textContent = 'Pincode not found. Please enter manually.';
+                    msg.style.color = 'var(--pink)';
+                }
+            } catch {
+                msg.textContent = 'Could not fetch pincode. Enter manually.';
+            }
+        }
+
+        // Validate form
+        function validateForm() {
+            const fields = ['fullName', 'phone', 'email', 'pincode', 'city', 'state', 'address'];
+            for (const field of fields) {
+                if (!document.getElementById(field).value.trim()) {
+                    alert('Please fill in all fields before paying!');
+                    document.getElementById(field).focus();
+                    return false;
+                }
+            }
+            const phone = document.getElementById('phone').value;
+            if (phone.length !== 10) {
+                alert('Please enter a valid 10 digit phone number!');
+                return false;
+            }
+            return true;
+        }
+
+        // Show UPI QR Code
+        function showQRCode(event) {
+            if (!validateForm()) return;
+
+            // Hide the proceed button, show the QR section
+            event.target.style.display = 'none';
+            const upiSection = document.getElementById('upiSection');
+            upiSection.style.display = 'block';
+
+            // Generate QR Code URL
+            const upiId = '{{ upi_id }}';
+            const amount = window.orderTotal;
+            const name = 'Charmly';
+
+            const upiString = `upi://pay?pa=${upiId}&pn=${name}&am=${amount}&cu=INR`;
+            const qrUrl = `https://quickchart.io/qr?size=200&text=${encodeURIComponent(upiString)}`;
+
+            document.getElementById('upiQrCode').src = qrUrl;
+        }
+
+        // Submit manual order
+        async function submitOrder() {
+            const utr = document.getElementById('utrNumber').value.trim();
+            if (utr.length < 8) {
+                alert('Please enter a valid UTR or Reference number!');
+                return;
+            }
+
+            const cart = JSON.parse(localStorage.getItem('charmly_cart')) || [];
+
+            try {
+                // Submit order to backend
+                const res = await fetch('/api/create-order', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        amount: window.orderTotal,
+                        subtotal: window.orderSubtotal,
+                        shipping: window.shippingCost,
+                        utr: utr,
+                        name: document.getElementById('fullName').value,
+                        email: document.getElementById('email').value,
+                        phone: document.getElementById('phone').value,
+                        address: document.getElementById('address').value,
+                        city: document.getElementById('city').value,
+                        state: document.getElementById('state').value,
+                        pincode: document.getElementById('pincode').value,
+                        cart: cart
+                    })
+                });
+
+                const result = await res.json();
+                if (result.success) {
+                    localStorage.removeItem('charmly_cart');
+                    window.location.href = '/order-success?order_id=' + result.order_id;
+                } else {
+                    alert('Error placing order: ' + result.error);
+                }
+            } catch (err) {
+                alert('Something went wrong. Please try again!');
+                console.error(err);
+            }
+        }
+
+        loadSummary();
+    </script>
+</body>
+
+</html>

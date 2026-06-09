@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ product.name }} — Charmly</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <div class="nav-logo">✦ Charmly</div>
+        <ul class="nav-links">
+            <li><a href="/">Home</a></li>
+            <li><a href="/shop">Shop</a></li>
+            <li><a href="/#about">About</a></li>
+            <li><a href="/#contact">Contact</a></li>
+        </ul>
+        <a href="/cart" class="nav-cart">🛒 Cart <span class="cart-count">0</span></a>
+        <button class="hamburger" id="hamburger">☰</button>
+    </nav>
+
+    <div class="mobile-menu" id="mobileMenu">
+        <a href="/">Home</a>
+        <a href="/shop">Shop</a>
+        <a href="/#about">About</a>
+        <a href="/cart">Cart</a>
+    </div>
+
+    <!-- PRODUCT DETAIL -->
+    <section class="product-detail">
+
+        <!-- BREADCRUMB -->
+        <div class="breadcrumb">
+            <a href="/">Home</a> ›
+            <a href="/shop">Shop</a> ›
+            <span>{{ product.name }}</span>
+        </div>
+
+        <div class="product-detail-grid">
+
+            <!-- LEFT: IMAGE CAROUSEL -->
+            <div class="product-carousel">
+                <div class="carousel-main">
+                    <div class="carousel-img" style="background: {{ product.bg_color }}" id="mainImg">
+                        {% if product.image %}
+                        <img src="{{ product.image }}" alt="{{ product.name }}" id="carouselImg" />
+                        {% else %}
+                        <span class="product-detail-emoji">{{ product.emoji }}</span>
+                        {% endif %}
+                    </div>
+
+                    {% if product.images and product.images|length > 1 %}
+                    <button class="carousel-btn left" onclick="prevImage()">‹</button>
+                    <button class="carousel-btn right" onclick="nextImage()">›</button>
+                    {% endif %}
+                </div>
+
+                {% if product.badge %}
+                <span class="badge badge-{{ product.badge_type }}">{{ product.badge }}</span>
+                {% endif %}
+
+                <!-- THUMBNAILS -->
+                {% if product.images and product.images|length > 1 %}
+                <div class="thumbnail-strip" style="margin-top: 0.75rem;">
+                    {% for img_url in product.images %}
+                    <img src="{{ img_url }}" alt="Photo {{ loop.index }}"
+                        class="thumbnail {% if loop.first %}active{% endif %}"
+                        onclick="switchToImage(this, {{ loop.index0 }})" />
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- RIGHT: INFO -->
+            <div class="product-detail-info">
+                <p class="product-detail-category">{{ product.category | capitalize }}</p>
+                <h1 class="product-detail-name">{{ product.name }}</h1>
+                <div class="product-detail-rating">
+                    ★★★★★ <span>({{ product.reviews }} reviews)</span>
+                </div>
+                <p class="product-detail-price">₹{{ product.price }}</p>
+                <p class="product-detail-desc">{{ product.description }}</p>
+
+                {% if product.out_of_stock %}
+                <div class="oos-detail-banner">
+                    <span>😔</span> This item is currently out of stock
+                </div>
+                {% endif %}
+
+                <div class="product-detail-features">
+                    <div class="detail-feature">
+                        <span>✋</span> Handmade with love
+                    </div>
+                    <div class="detail-feature">
+                        <span>📦</span> Ships in a cute gift pouch
+                    </div>
+                    <div class="detail-feature">
+                        <span>🚀</span> Delivered in 3–5 days
+                    </div>
+                    <div class="detail-feature">
+                        <span>💳</span> Secure online payment
+                    </div>
+                    <div class="detail-feature">
+                        <span>🚚</span> Free shipping on orders above ₹599
+                    </div>
+                </div>
+
+                {% if not product.out_of_stock %}
+                <!-- QUANTITY -->
+                <div class="product-qty">
+                    <p class="qty-label">Quantity</p>
+                    <div class="qty-controls">
+                        <button class="qty-btn" onclick="changeQty(-1)">−</button>
+                        <span class="qty-display" id="qtyDisplay">1</span>
+                        <button class="qty-btn" onclick="changeQty(1)">+</button>
+                    </div>
+                </div>
+
+                <!-- ADD TO CART BUTTON -->
+                <button class="btn-add-to-cart" id="addToCartBtn"
+                    onclick="addToCartFromProduct('{{ product.id }}', '{{ product.name }}', {{ product.price }}, '{{ product.emoji }}', '{{ product.image or '' }}')">
+                    🛒 Add to Cart — ₹{{ product.price }}
+                </button>
+                {% else %}
+                <button class="btn-add-to-cart" disabled
+                    style="opacity:0.5; cursor:not-allowed; background: #999;">
+                    😔 Out of Stock
+                </button>
+                {% endif %}
+
+                <a href="/shop" class="back-to-shop">← Back to shop</a>
+            </div>
+
+        </div>
+    </section>
+
+    <footer id="contact">
+        <div class="footer-brand">
+            <p class="footer-logo">✦ Charmly</p>
+            <p class="footer-desc">Handmade keychains, created with love.</p>
+        </div>
+        <div class="footer-links">
+            <h4>Shop</h4>
+            <a href="/shop">All keychains</a>
+            <a href="/shop?filter=new">New arrivals</a>
+        </div>
+        <div class="footer-links">
+            <h4>Connect</h4>
+            <a href="#">Instagram</a>
+            <a href="#">WhatsApp</a>
+        </div>
+        <div class="footer-bottom">
+            <p>© 2026 Charmly — A tiny handmade shop by Aahla 🩷</p>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+        let qty = 1;
+        const productPrice = {{ product.price | int }};
+
+        function changeQty(change) {
+            qty = Math.max(1, qty + change);
+            document.getElementById('qtyDisplay').textContent = qty;
+            const btn = document.getElementById('addToCartBtn');
+            if (btn) {
+                btn.textContent = '🛒 Add to Cart — ₹' + (productPrice * qty);
+            }
+        }
+
+        function addToCartFromProduct(id, name, price, emoji, image) {
+            let cart = JSON.parse(localStorage.getItem('charmly_cart')) || [];
+            const existing = cart.find(item => item.id === id);
+            if (existing) {
+                existing.qty += qty;
+            } else {
+                cart.push({ id, name, price, emoji, image: image || '', qty });
+            }
+            localStorage.setItem('charmly_cart', JSON.stringify(cart));
+            updateCartCount();
+
+            const btn = document.getElementById('addToCartBtn');
+            btn.textContent = '✓ Added to Cart!';
+            btn.style.background = '#06D6A0';
+            setTimeout(() => {
+                btn.textContent = '🛒 Add to Cart — ₹' + (productPrice * qty);
+                btn.style.background = '';
+            }, 1500);
+        }
+
+        // Image carousel
+        let currentImageIndex = 0;
+        const allImages = {{ product.images | tojson if product.images else '[]' }};
+
+        function updateCarousel() {
+            if (allImages.length === 0) return;
+            const img = document.getElementById('carouselImg');
+            if (img) {
+                img.src = allImages[currentImageIndex];
+            }
+            // Update active thumbnail
+            document.querySelectorAll('.thumbnail').forEach((t, i) => {
+                t.classList.toggle('active', i === currentImageIndex);
+            });
+        }
+
+        function nextImage() {
+            if (allImages.length === 0) return;
+            currentImageIndex = (currentImageIndex + 1) % allImages.length;
+            updateCarousel();
+        }
+
+        function prevImage() {
+            if (allImages.length === 0) return;
+            currentImageIndex = (currentImageIndex - 1 + allImages.length) % allImages.length;
+            updateCarousel();
+        }
+
+        function switchToImage(thumb, index) {
+            currentImageIndex = index;
+            updateCarousel();
+        }
+    </script>
+</body>
+
+</html>

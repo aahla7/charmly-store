@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cart — Charmly</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <div class="nav-logo">✦ Charmly</div>
+        <ul class="nav-links">
+            <li><a href="/">Home</a></li>
+            <li><a href="/shop">Shop</a></li>
+            <li><a href="/#about">About</a></li>
+            <li><a href="/#contact">Contact</a></li>
+        </ul>
+        <a href="/cart" class="nav-cart">🛒 Cart <span class="cart-count">0</span></a>
+        <button class="hamburger" id="hamburger">☰</button>
+    </nav>
+
+    <div class="mobile-menu" id="mobileMenu">
+        <a href="/">Home</a>
+        <a href="/shop">Shop</a>
+        <a href="/#about">About</a>
+        <a href="/cart">Cart</a>
+    </div>
+
+    <div class="cart-page">
+        <h1>Your Cart 🛒</h1>
+
+        <!-- EMPTY CART -->
+        <div class="empty-cart" id="emptyCart" style="display:none">
+            <p style="font-size:3rem">🛍️</p>
+            <p>Your cart is empty!</p>
+            <a href="/shop" class="btn-primary" style="margin-top:1rem">Browse keychains</a>
+        </div>
+
+        <!-- CART ITEMS -->
+        <div class="cart-items" id="cartItems"></div>
+
+        <!-- CART SUMMARY -->
+        <div class="cart-summary" id="cartSummary" style="display:none">
+            <div class="cart-total">
+                <span>Subtotal</span>
+                <span id="cartSubtotal">₹0</span>
+            </div>
+            <div class="cart-total" style="font-size:0.85rem; color:var(--mid); font-weight:400">
+                <span>Shipping</span>
+                <span id="cartShipping">₹70</span>
+            </div>
+            <hr style="border:none; border-top:1px solid #F0EBF8; margin:1rem 0">
+            <div class="cart-total" style="font-size:1.2rem">
+                <span>Total</span>
+                <span id="cartTotal" style="color:var(--pink)">₹0</span>
+            </div>
+            <p id="shippingNote" style="font-size:0.78rem; color:var(--mid); margin-bottom:1rem; text-align:center;">
+                🚚 Shipping: ₹70 flat · Free on orders above ₹599!
+            </p>
+            <a href="/checkout" class="btn-primary" style="display:block; text-align:center; margin-top:1.25rem">
+                Proceed to Checkout →
+            </a>
+            <a href="/shop" class="back-to-shop" style="margin-top:0.75rem">← Continue shopping</a>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+        function loadCart() {
+            const cart = JSON.parse(localStorage.getItem('charmly_cart')) || [];
+            const cartItems = document.getElementById('cartItems');
+            const emptyCart = document.getElementById('emptyCart');
+            const cartSummary = document.getElementById('cartSummary');
+
+            if (cart.length === 0) {
+                emptyCart.style.display = 'block';
+                cartSummary.style.display = 'none';
+                cartItems.innerHTML = '';
+                return;
+            }
+
+            emptyCart.style.display = 'none';
+            cartSummary.style.display = 'block';
+
+            let subtotal = 0;
+            cartItems.innerHTML = cart.map(item => {
+                subtotal += item.price * item.qty;
+                const imgHtml = item.image
+                    ? `<img src="${item.image}" alt="${item.name}" style="width:100%; height:100%; object-fit:cover; border-radius:12px;" />`
+                    : item.emoji;
+                return `
+          <div class="cart-item">
+            <div class="cart-item-img">${imgHtml}</div>
+            <div class="cart-item-info">
+              <p class="cart-item-name">${item.name}</p>
+              <p class="cart-item-price">₹${item.price} each</p>
+            </div>
+            <div class="cart-item-qty">
+              <button class="qty-btn" onclick="updateQty('${item.id}', -1)">−</button>
+              <span>${item.qty}</span>
+              <button class="qty-btn" onclick="updateQty('${item.id}', 1)">+</button>
+            </div>
+            <div style="font-family:'Playfair Display',serif; font-weight:700; min-width:60px; text-align:right">
+              ₹${item.price * item.qty}
+            </div>
+            <button onclick="removeItem('${item.id}')"
+              style="background:none; border:none; cursor:pointer; color:#FF6B9D; font-size:1.2rem; margin-left:0.5rem">
+              ✕
+            </button>
+          </div>
+        `;
+            }).join('');
+
+            // Calculate shipping: ₹70 flat, free above ₹599
+            const shipping = subtotal >= 599 ? 0 : 70;
+            const total = subtotal + shipping;
+
+            document.getElementById('cartSubtotal').textContent = '₹' + subtotal;
+            document.getElementById('cartShipping').textContent = shipping === 0 ? '₹0 — FREE! 🎉' : '₹70';
+            document.getElementById('cartTotal').textContent = '₹' + total;
+
+            const note = document.getElementById('shippingNote');
+            if (shipping === 0) {
+                note.textContent = '🎉 You qualify for FREE shipping!';
+                note.style.color = '#06D6A0';
+            } else {
+                const remaining = 599 - subtotal;
+                note.textContent = `🚚 Add ₹${remaining} more for FREE shipping!`;
+                note.style.color = 'var(--mid)';
+            }
+        }
+
+        function updateQty(id, change) {
+            let cart = JSON.parse(localStorage.getItem('charmly_cart')) || [];
+            const item = cart.find(i => i.id === id);
+            if (item) {
+                item.qty += change;
+                if (item.qty <= 0) {
+                    cart = cart.filter(i => i.id !== id);
+                }
+            }
+            localStorage.setItem('charmly_cart', JSON.stringify(cart));
+            updateCartCount();
+            loadCart();
+        }
+
+        function removeItem(id) {
+            let cart = JSON.parse(localStorage.getItem('charmly_cart')) || [];
+            cart = cart.filter(i => i.id !== id);
+            localStorage.setItem('charmly_cart', JSON.stringify(cart));
+            updateCartCount();
+            loadCart();
+        }
+
+        loadCart();
+    </script>
+</body>
+
+</html>

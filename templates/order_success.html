@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Order Placed! — Charmly</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <div class="nav-logo">✦ Charmly</div>
+        <ul class="nav-links">
+            <li><a href="/">Home</a></li>
+            <li><a href="/shop">Shop</a></li>
+        </ul>
+        <a href="/cart" class="nav-cart">🛒 Cart <span class="cart-count">0</span></a>
+        <button class="hamburger" id="hamburger">☰</button>
+    </nav>
+
+    <div style="min-height:100vh; display:flex; align-items:center; justify-content:center; padding: 2rem;">
+        <div style="text-align:center; max-width:480px;">
+            <div style="font-size:5rem; margin-bottom:1rem">🎉</div>
+            <h1 style="font-family:'Playfair Display',serif; font-size:2.5rem; margin-bottom:0.75rem">
+                Order Placed!
+            </h1>
+            <p style="color:var(--mid); font-size:1rem; line-height:1.7; margin-bottom:0.5rem">
+                Thank you so much for your order! 🩷 I'll start making your keychain right away and ship it within 2
+                days.
+            </p>
+            <p style="color:var(--mid); font-size:0.88rem; margin-bottom:2rem">
+                Order ID: <strong>{{ order_id }}</strong>
+            </p>
+            <div
+                style="background:var(--soft); border-radius:20px; padding:1.5rem; margin-bottom:2rem; text-align:left;">
+                <p style="font-size:0.88rem; font-weight:600; margin-bottom:0.75rem">What happens next?</p>
+                <p style="font-size:0.82rem; color:var(--mid); line-height:1.8">
+                    📦 Your keychain will be handmade and packed<br>
+                    🚀 Shipped within 2 days<br>
+                    📬 Delivered in 3–5 business days<br>
+                    💬 You'll get updates on WhatsApp
+                </p>
+            </div>
+            <a href="/shop" class="btn-primary">Shop more keychains →</a>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+
+</html>

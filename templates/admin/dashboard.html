@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard — Charmly Admin</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+
+    <!-- ADMIN NAVBAR -->
+    <nav class="admin-nav">
+        <div class="nav-logo" style="color:white">✦ Charmly Admin</div>
+        <div style="display:flex; gap:1.5rem; align-items:center;">
+            <a href="/" target="_blank">View Shop →</a>
+            <a href="/admin/logout">Logout</a>
+        </div>
+    </nav>
+
+    <div class="admin-container">
+
+        <!-- WELCOME -->
+        <div style="margin-bottom:1.5rem; padding-top:1rem;">
+            <h2 style="font-family:'Playfair Display',serif; font-size:1.8rem;">
+                Welcome back, Aahla! 🩷
+            </h2>
+            <p style="color:var(--mid); font-size:0.9rem;">
+                Manage your products and view orders here.
+            </p>
+        </div>
+
+        <!-- QUICK STATS -->
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(150px,1fr));
+      gap:1rem; margin-bottom:2rem;">
+            <div class="admin-card" style="text-align:center;">
+                <p style="font-size:2rem; font-weight:700; font-family:'Playfair Display',serif;
+          color:var(--pink)">{{ products|length }}</p>
+                <p style="font-size:0.82rem; color:var(--mid)">Total products</p>
+            </div>
+            <div class="admin-card" style="text-align:center;">
+                <p style="font-size:2rem; font-weight:700; font-family:'Playfair Display',serif;
+          color:var(--purple)">{{ orders|length }}</p>
+                <p style="font-size:0.82rem; color:var(--mid)">Total orders</p>
+            </div>
+            <div class="admin-card" style="text-align:center;">
+                {% set total_earnings = [] %}
+                {% for order in orders %}
+                {% if order.status == 'paid' %}
+                {% if total_earnings.append(order.amount|default(0)) %}{% endif %}
+                {% endif %}
+                {% endfor %}
+                <p style="font-size:2rem; font-weight:700; font-family:'Playfair Display',serif;
+          color:var(--teal, #06D6A0)">₹{{ total_earnings|sum|int }}</p>
+                <p style="font-size:0.82rem; color:var(--mid)">Total earnings</p>
+            </div>
+        </div>
+
+        <div class="admin-grid">
+
+            <!-- ADD NEW PRODUCT -->
+            <div class="admin-card">
+                <h3>➕ Add New Product</h3>
+                <form id="addProductForm" enctype="multipart/form-data">
+
+                    <div class="form-group">
+                        <label>Product Name</label>
+                        <input type="text" id="prodName" placeholder="e.g. Sakura Petal Charm" />
+                    </div>
+
+                    <div class="form-group">
+                        <label>Description</label>
+                        <input type="text" id="prodDesc" placeholder="e.g. Delicate resin petals with gold ring" />
+                    </div>
+
+                    <div class="form-group">
+                        <label>Price (₹)</label>
+                        <input type="number" id="prodPrice" placeholder="e.g. 149" />
+                    </div>
+
+                    <div class="form-group">
+                        <label>Category</label>
+                        <select id="prodCategory" onchange="updateSubcategories()">
+                            {% for cat in categories %}
+                            <option value="{{ cat.id }}">{{ cat.emoji }} {{ cat.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group" id="subcategoryGroup" style="display:none">
+                        <label>Subcategory</label>
+                        <select id="prodSubcategory">
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Emoji (for placeholder)</label>
+                        <input type="text" id="prodEmoji" placeholder="e.g. 🌸" maxlength="2" />
+                    </div>
+
+                    <div class="form-group">
+                        <label>Badge</label>
+                        <select id="prodBadge">
+                            <option value="">No badge</option>
+                            <option value="new">✨ New</option>
+                            <option value="best">⭐ Bestseller</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Product Photos (Max 5)</label>
+                        <div class="upload-box" onclick="document.getElementById('prodImages').click()">
+                            <p style="font-size:2rem">📷</p>
+                            <p>Click to upload photos (up to 5)</p>
+                            <p id="fileName" style="color:var(--pink); font-size:0.8rem; margin-top:4px"></p>
+                        </div>
+                        <input type="file" id="prodImages" accept="image/*" multiple style="display:none"
+                            onchange="showFileNames(this)" />
+                        <div id="imagePreview" style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:0.5rem;">
+                        </div>
+                    </div>
+
+                    <!-- OUT OF STOCK CHECKBOX -->
+                    <div class="form-group" style="display:flex; align-items:center; gap:0.75rem;">
+                        <input type="checkbox" id="prodOutOfStock"
+                            style="width:18px; height:18px; accent-color:var(--pink); cursor:pointer;" />
+                        <label for="prodOutOfStock" style="margin-bottom:0; cursor:pointer; font-size:0.88rem;">
+                            Mark as Out of Stock
+                        </label>
+                    </div>
+
+                    <button type="button" class="btn-full" onclick="addProduct()">
+                        Add Product →
+                    </button>
+
+                    <div id="addMsg" style="margin-top:0.75rem; font-size:0.82rem;
+            text-align:center; display:none;"></div>
+                </form>
+            </div>
+
+            <!-- EXISTING PRODUCTS -->
+            <div class="admin-card">
+                <h3>🔑 Your Products</h3>
+                <div id="productList">
+                    {% for product in products %}
+                    <div class="product-list-item" id="item-{{ product.id }}">
+                        <div class="product-list-img">
+                            {% if product.image %}
+                            <img src="{{ product.image }}" alt="{{ product.name }}"
+                                style="width:100%; height:100%; object-fit:cover; border-radius:10px;" />
+                            {% else %}
+                            {{ product.emoji }}
+                            {% endif %}
+                        </div>
+                        <div class="product-list-info">
+                            <p class="product-list-name">{{ product.name }}</p>
+                            <p class="product-list-price">₹{{ product.price }}</p>
+                        </div>
+                        <div class="product-list-actions">
+                            <!-- STOCK TOGGLE -->
+                            <button
+                                class="btn-stock {% if product.out_of_stock %}btn-stock-out{% else %}btn-stock-in{% endif %}"
+                                id="stock-btn-{{ product.id }}" onclick="toggleStock('{{ product.id }}')">
+                                {% if product.out_of_stock %}Out of Stock{% else %}In Stock{% endif %}
+                            </button>
+                            <button class="btn-delete" onclick="deleteProduct('{{ product.id }}')">Delete</button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- ORDERS -->
+            <div class="admin-card" style="grid-column: 1 / -1;">
+                <h3>📦 Recent Orders</h3>
+                <div id="ordersList">
+                    {% if orders %}
+                    {% for order in orders %}
+                    <div class="order-item">
+                        <div class="order-top">
+                            <div>
+                                <span class="order-id">#{{ order.id[:8] }}...</span>
+                                <span
+                                    class="status-badge {% if order.status == 'paid' %}status-paid{% elif order.status == 'pending_verification' %}status-pending{% else %}status-pending{% endif %}">
+                                    {% if order.status == 'pending_verification' %}Pending Verification{% else %}{{ order.status|capitalize }}{% endif %}
+                                </span>
+                            </div>
+                            <span class="order-amount">₹{{ order.amount|default(0) }}</span>
+                        </div>
+                        <div class="order-detail">
+                            👤 {{ order.customer_name|default('N/A') }}
+                            · 📱 {{ order.customer_phone|default('N/A') }}
+                            <a href="#" onclick="sendWhatsApp('{{ order.customer_phone|default('') }}', '{{ order.customer_name|default('') }}', '{{ order.id[:8] }}', '{{ order.status }}')" style="color:#06D6A0; text-decoration:none; margin-left:8px; font-weight:600; font-size:0.8rem;">
+                                [💬 Message on WhatsApp]
+                            </a>
+                            <br>
+                            📧 {{ order.customer_email|default('N/A') }}
+                        </div>
+                        <div class="order-detail">
+                            📍 {{ order.address|default('') }}, {{ order.city|default('') }},
+                            {{ order.state|default('') }} - {{ order.pincode|default('') }}
+                        </div>
+                        {% if order.cart %}
+                        <div class="order-detail" style="margin-top:4px;">
+                            🛒
+                            {% for item in order.cart %}
+                            {{ item.name|default('Item') }} ×{{ item.qty|default(1) }}{% if not loop.last %}, {% endif
+                            %}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        {% if order.utr %}
+                        <div class="order-detail" style="margin-top:4px; font-weight: 500; color: var(--dark);">
+                            💳 UTR / Ref No: {{ order.utr }}
+                        </div>
+                        {% endif %}
+                        {% if order.status == 'pending_verification' %}
+                        <div style="margin-top:0.75rem;">
+                            <button class="btn-full" style="background:#06D6A0; color:white; padding:0.4rem; font-size:0.8rem;"
+                                id="verify-btn-{{ order.id }}"
+                                onclick="verifyPayment('{{ order.id }}')">
+                                ✅ Verify Payment
+                            </button>
+                        </div>
+                        {% endif %}
+                        <div class="order-detail" style="font-size:0.7rem; color:#aaa; margin-top:4px;">
+                            {{ order.created_at|default('') }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <div style="text-align:center; padding:2rem; color:var(--mid); font-size:0.88rem;">
+                        No orders yet — share your shop link to get your first order! 🚀
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        let selectedFiles = [];
+
+        function showFileNames(input) {
+            if (input.files && input.files.length > 0) {
+                // Add new files to our array
+                for (let i = 0; i < input.files.length; i++) {
+                    if (selectedFiles.length < 5) {
+                        selectedFiles.push(input.files[i]);
+                    } else {
+                        alert("You can only upload up to 5 photos.");
+                        break;
+                    }
+                }
+                
+                // Reset file input so same file can be selected again if needed
+                input.value = '';
+
+                // Update UI
+                updateImagePreviews();
+            }
+        }
+
+        function updateImagePreviews() {
+            const fileNameEl = document.getElementById('fileName');
+            const previewEl = document.getElementById('imagePreview');
+            previewEl.innerHTML = '';
+            
+            const count = selectedFiles.length;
+            
+            if (count > 0) {
+                fileNameEl.textContent = `✓ ${count}/5 photo${count !== 1 ? 's' : ''} selected (Click to add more)`;
+                fileNameEl.style.color = 'var(--pink)';
+                
+                selectedFiles.forEach((file, index) => {
+                    const reader = new FileReader();
+                    reader.onload = e => {
+                        const container = document.createElement('div');
+                        container.style.cssText = 'position: relative; display: inline-block;';
+                        
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        img.style.cssText = 'width:70px; height:70px; object-fit:cover; border-radius:10px;';
+                        
+                        const removeBtn = document.createElement('button');
+                        removeBtn.innerHTML = '✕';
+                        removeBtn.style.cssText = 'position: absolute; top: -5px; right: -5px; background: var(--pink); color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10;';
+                        removeBtn.type = 'button';
+                        removeBtn.onclick = function(event) {
+                            event.preventDefault();
+                            event.stopPropagation(); // prevent opening file dialog
+                            removeFile(index);
+                        };
+                        
+                        container.appendChild(img);
+                        container.appendChild(removeBtn);
+                        previewEl.appendChild(container);
+                    };
+                    reader.readAsDataURL(file);
+                });
+            } else {
+                fileNameEl.textContent = '';
+            }
+        }
+
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            updateImagePreviews();
+        }
+
+        async function addProduct() {
+            const name = document.getElementById('prodName').value.trim();
+            const desc = document.getElementById('prodDesc').value.trim();
+            const price = document.getElementById('prodPrice').value.trim();
+            const category = document.getElementById('prodCategory').value;
+            const emoji = document.getElementById('prodEmoji').value.trim() || '🔑';
+            const badge = document.getElementById('prodBadge').value;
+            const outOfStock = document.getElementById('prodOutOfStock').checked;
+            const subcategory = document.getElementById('prodSubcategory') ?
+                document.getElementById('prodSubcategory').value : '';
+
+            if (!name || !desc || !price) {
+                alert('Please fill in name, description and price!');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('name', name);
+            formData.append('description', desc);
+            formData.append('price', price);
+            formData.append('category', category);
+            formData.append('emoji', emoji);
+            formData.append('badge', badge);
+            formData.append('subcategory', subcategory);
+            formData.append('out_of_stock', outOfStock ? 'true' : 'false');
+
+            // Append multiple images under 'images' key
+            for (let i = 0; i < selectedFiles.length; i++) {
+                formData.append('images', selectedFiles[i]);
+            }
+
+            const msg = document.getElementById('addMsg');
+            msg.style.display = 'block';
+            msg.style.color = 'var(--mid)';
+            msg.textContent = 'Adding product...';
+
+            try {
+                const res = await fetch('/admin/add-product', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.success) {
+                    msg.style.color = '#06D6A0';
+                    msg.textContent = '✓ Product added successfully!';
+                    document.getElementById('addProductForm').reset();
+                    document.getElementById('fileName').textContent = '';
+                    document.getElementById('imagePreview').innerHTML = '';
+                    selectedFiles = []; // Reset selected files array
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    msg.style.color = 'var(--pink)';
+                    msg.textContent = 'Error: ' + data.error;
+                }
+            } catch (err) {
+                msg.style.color = 'var(--pink)';
+                msg.textContent = 'Something went wrong. Try again!';
+                console.error(err);
+            }
+        }
+
+        async function deleteProduct(id) {
+            if (!confirm('Delete this product?')) return;
+            try {
+                const res = await fetch('/admin/delete-product/' + id, {
+                    method: 'DELETE'
+                });
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('item-' + id).remove();
+                }
+            } catch (err) {
+                alert('Could not delete. Try again!');
+            }
+        }
+
+        async function toggleStock(id) {
+            try {
+                const res = await fetch('/admin/toggle-stock/' + id, {
+                    method: 'POST'
+                });
+                const data = await res.json();
+                if (data.success) {
+                    const btn = document.getElementById('stock-btn-' + id);
+                    if (data.out_of_stock) {
+                        btn.textContent = 'Out of Stock';
+                        btn.className = 'btn-stock btn-stock-out';
+                    } else {
+                        btn.textContent = 'In Stock';
+                        btn.className = 'btn-stock btn-stock-in';
+                    }
+                }
+            } catch (err) {
+                alert('Could not update stock. Try again!');
+            }
+        }
+
+        async function verifyPayment(id) {
+            if (!confirm('Have you checked your bank app and verified this UTR matches the amount?')) return;
+            const btn = document.getElementById('verify-btn-' + id);
+            btn.disabled = true;
+            btn.textContent = 'Verifying...';
+            try {
+                const res = await fetch('/admin/verify-payment/' + id, {
+                    method: 'POST'
+                });
+                const data = await res.json();
+                if (data.success) {
+                    btn.textContent = '✓ Verified';
+                    btn.style.background = '#ccc';
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    alert('Error: ' + data.error);
+                    btn.disabled = false;
+                    btn.textContent = '✅ Verify Payment';
+                }
+            } catch (err) {
+                alert('Could not verify. Try again!');
+                btn.disabled = false;
+                btn.textContent = '✅ Verify Payment';
+            }
+        }
+
+        function sendWhatsApp(phone, name, orderId, status) {
+            if (!phone) {
+                alert('No phone number provided for this order.');
+                return;
+            }
+            
+            // Clean phone number
+            let cleanPhone = phone.replace(/\D/g, '');
+            if (cleanPhone.length === 10) cleanPhone = '91' + cleanPhone; // Assume India (+91)
+            
+            let message = '';
+            if (status === 'paid') {
+                message = `Hi ${name}! 🩷 Thank you for shopping with Charmly! We have successfully received your payment for Order #${orderId}. We're getting your keychains ready and will ship them out soon!`;
+            } else if (status === 'pending_verification') {
+                message = `Hi ${name}! 🩷 We received your Charmly Order #${orderId}. We are currently verifying your UPI payment. Once verified, we will start preparing your keychains!`;
+            } else {
+                message = `Hi ${name}! 🩷 This is regarding your Charmly Order #${orderId}.`;
+            }
+            
+            const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+            window.open(url, '_blank');
+        }
+
+        const categoryData = {{ categories | tojson }};
+
+        function updateSubcategories() {
+            const catId = document.getElementById('prodCategory').value;
+            const cat = categoryData.find(c => c.id === catId);
+            const subGroup = document.getElementById('subcategoryGroup');
+            const subSelect = document.getElementById('prodSubcategory');
+
+            if (cat && cat.subcategories.length > 0) {
+                subGroup.style.display = 'block';
+                subSelect.innerHTML = cat.subcategories.map(s =>
+                    `<option value="${s.id}">${s.emoji} ${s.name}</option>`
+                ).join('');
+            } else {
+                subGroup.style.display = 'none';
+                subSelect.innerHTML = '';
+            }
+        }
+    </script>
+
+</body>
+
+</html>
